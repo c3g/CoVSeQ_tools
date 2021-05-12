@@ -1,29 +1,15 @@
-# README #
+# CoVSeQ Tools
 
-This README would normally document whatever steps are necessary to get your application up and running.
+A collection of tools and scripts to support the analysis and collect metrics on COVID-19 viral data. 
 
-### What is this repository for? ###
+### Dependencies ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+These scripts are designed to work in *Compute Canada* clusters and assume the user is running GenPipes pipelines to analyze their data. 
 
-### How do I get set up? ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Organization ### 
 
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+* `full_reporting`: Scripts used to generate the full report covering all runs across all technolgies and sequencing centres
+* `illumina_metrics`: Scripts used to generate metrics for illumina runs
+* `ont_metrics`: Scripts used to generate metrics for nanopore runs
+* `run_reporting`: Scripts used to re-format metrics and create reports for illumina runs
