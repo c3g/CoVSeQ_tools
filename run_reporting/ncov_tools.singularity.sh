@@ -14,7 +14,7 @@ export ENVDIR="/genfs/projects/analyste_dev/python_venvs/snakemake/bin/activate"
 # Activate python virtual env
 source ${ENVDIR}
 
-export NCOVTOOLS_SIF="/genfs/projects/analyste_dev/singularity/images/ncov-tools_v1.5.snepeff_fix.simg"
+export NCOVTOOLS_SIF="/genfs/projects/analyste_dev/singularity/images/ncov-tools_v1.1.sif"
 
 # Define directories
 PROJ="REPLACE-PWD"
