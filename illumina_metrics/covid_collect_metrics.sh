@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-WORKING_DIR=`pwd`
+GENPIPES_OUTPUT_PATH=`pwd`
 
 usage (){
 
@@ -9,7 +9,7 @@ echo "usage: $0 <READSET_FILE>
   Gathers metrics for covseq pipeline from GenPipes."
 echo
 echo "   -r <READSET_FILE>             readset file used for GenPipes covseq analysis."
-echo "   -o <GENPIPES_OUTPUT_PATH>     path of GenPipes covseq output location. (Default: $WORKING_DIR)"
+echo "   -o <GENPIPES_OUTPUT_PATH>     path of GenPipes covseq output location. (Default: $GENPIPES_OUTPUT_PATH)"
 
 }
 
