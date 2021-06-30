@@ -266,6 +266,6 @@ final.columns <- c("Sample",
 final.table <- full.table %>% dplyr::select(final.columns) %>% rename_at(vars(final.columns), ~final.column.names)
 final.table <- final.table %>% distinct()
 
-write_csv(final.table, path = paste(argsDF$output_name_pattern ,".csv"))
-write_tsv(final.table, path = paste(argsDF$output_name_pattern ,".tsv"))
+write_csv(final.table, path = paste(argsDF$output_name_pattern, ".csv", sep=""))
+write_tsv(final.table, path = paste(argsDF$output_name_pattern, ".tsv", sep=""))
 ###############################################################################
