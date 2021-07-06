@@ -6,7 +6,7 @@ usage (){
 
 echo
 echo "usage: $0 <READSET_FILE>
-  Gathers metrics for covseq pipeline from GenPipes."
+  Gathers metrics for covseq pipeline from GenPipes. This script assumes you have samtools version 1.10 or above loaded in your environment"
 echo
 echo "   -r <READSET_FILE>             readset file used for GenPipes covseq analysis."
 echo "   -o <GENPIPES_OUTPUT_PATH>     path of GenPipes covseq output location. (Default: $GENPIPES_OUTPUT_PATH)"
