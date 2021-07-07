@@ -1,68 +1,143 @@
 #!/usr/bin/env bash
 
-readset=$1
+GENPIPES_OUTPUT_PATH=`pwd`
 
-if [[ -z "$readset" ]]; then
-   break
+usage (){
+
+echo
+echo "usage: $0 <READSET_FILE>
+  Gathers metrics for covseq pipeline from GenPipes. This script assumes you have samtools version 1.10 or above loaded in your environment"
+echo
+echo "   -r <READSET_FILE>             readset file used for GenPipes covseq analysis."
+echo "   -o <GENPIPES_OUTPUT_PATH>     path of GenPipes covseq output location. (Default: $GENPIPES_OUTPUT_PATH)"
+
+}
+
+while getopts "hr:o:" opt; do
+  case $opt in
+    r)
+      READSET_FILE=${OPTARG}
+    ;;
+    o)
+      GENPIPES_OUTPUT_PATH=${OPTARG}
+    ;;
+    h)
+      usage
+      exit 0
+    ;;
+    \?)
+      usage
+      exit 1
+    ;;
+  esac
+done
+
+# readset=$1
+
+if [[ -z "$READSET_FILE" ]]; then
+   usage
+      exit 1
 fi
 
 # module load mugqic/python/3.7.3
 # module load mugqic/sambamba/0.7.0
 # module load mugqic/samtools/1.10
 
-cat /dev/null > metrics/metrics.csv
-cat /dev/null > metrics/host_contamination_metrics.tsv
-cat /dev/null > metrics/host_removed_metrics.tsv
-cat /dev/null > metrics/kraken2_metrics.tsv
+METRICS_IVAR_OUT=${GENPIPES_OUTPUT_PATH}/metrics/metrics.csv
+METRICS_FREEBAYES_OUT=${GENPIPES_OUTPUT_PATH}/metrics/metrics_freebayes.csv
+HOST_CONTAMINATION_METRICS=${GENPIPES_OUTPUT_PATH}/metrics/host_contamination_metrics.tsv
+HOST_REMOVED_METRICS=${GENPIPES_OUTPUT_PATH}/metrics/host_removed_metrics.tsv
+KRAKEN_METRICS=${GENPIPES_OUTPUT_PATH}/metrics/kraken2_metrics.tsv
 
-echo "sample,cons.per.N,cons.len,cons.perc.GC,cons.perc.genome_frac,cons.N_per_100_kbp,fq.trim.pass,bam.perc.align,bam.filter.pass,bam.primertrim.pass,bam.mean.cov,bam.med.cov,bam.max-min/mean.cov,bam.perc.20x,bam.perc.50x,bam.perc.100x,bam.perc.250x,bam.perc.500x,bam.perc.1000x,bam.perc.2000x,bam.mean.insertsize,bam.med.insertsize,bam.sd.insertsize,bam.min.insertsize,bam.max.insertsize" > metrics/metrics.csv
+cat /dev/null > $METRICS_IVAR_OUT
+cat /dev/null > $METRICS_FREEBAYES_OUT
+cat /dev/null > $HOST_CONTAMINATION_METRICS
+cat /dev/null > $HOST_REMOVED_METRICS
+cat /dev/null > $KRAKEN_METRICS
 
-echo -e "Sample\tTotal_aligned\tHuman_only\tHuman_only_perc\tSARS_only\tSARS_only_perc\tUnmapped_only\tUnmapped_only_perc" > metrics/host_contamination_metrics.tsv
-echo -e "Sample\tTotal_aligned\tHuman_only\tHuman_only_perc\tSARS_only\tSARS_only_perc\tUnmapped_only\tUnmapped_only_perc" > metrics/host_removed_metrics.tsv
+echo "sample,cons.per.N,cons.len,cons.perc.GC,cons.perc.genome_frac,cons.N_per_100_kbp,fq.trim.pass,bam.perc.align,bam.filter.pass,bam.primertrim.pass,bam.mean.cov,bam.med.cov,bam.max-min/mean.cov,bam.perc.20x,bam.perc.50x,bam.perc.100x,bam.perc.250x,bam.perc.500x,bam.perc.1000x,bam.perc.2000x,bam.mean.insertsize,bam.med.insertsize,bam.sd.insertsize,bam.min.insertsize,bam.max.insertsize" > $METRICS_IVAR_OUT
+echo "sample,cons.per.N,cons.len,cons.perc.GC,cons.perc.genome_frac,cons.N_per_100_kbp,fq.trim.pass,bam.perc.align,bam.filter.pass,bam.primertrim.pass,bam.mean.cov,bam.med.cov,bam.max-min/mean.cov,bam.perc.20x,bam.perc.50x,bam.perc.100x,bam.perc.250x,bam.perc.500x,bam.perc.1000x,bam.perc.2000x,bam.mean.insertsize,bam.med.insertsize,bam.sd.insertsize,bam.min.insertsize,bam.max.insertsize" > $METRICS_FREEBAYES_OUT
 
-echo -e "Sample\tHomo_sapiens_clade\tHomo_sapiens_clade_perc" > metrics/kraken2_metrics.tsv
+echo -e "Sample\tTotal_aligned\tHuman_only\tHuman_only_perc\tSARS_only\tSARS_only_perc\tUnmapped_only\tUnmapped_only_perc" > $HOST_CONTAMINATION_METRICS
+echo -e "Sample\tTotal_aligned\tHuman_only\tHuman_only_perc\tSARS_only\tSARS_only_perc\tUnmapped_only\tUnmapped_only_perc" > $HOST_REMOVED_METRICS
 
-for sample in `awk 'NR>1 {print $1}' $readset`
+echo -e "Sample\tHomo_sapiens_clade\tHomo_sapiens_clade_perc" > $KRAKEN_METRICS
+
+for sample in `awk 'NR>1 {print $1}' $READSET_FILE`
 do
     genome_size=29903
     consensus_fa=alignment/$sample/$sample.sorted.filtered.primerTrim.consensus.fa
 
-    # Parsing quast results
-    quast_tsv=`echo "metrics/dna/$sample/quast_metrics/report.tsv"`
-    quast_html=`echo "metrics/dna/$sample/quast_metrics/report.html"`
+    # Parsing quast results from ivar
+    ivar_quast_tsv=`echo "metrics/dna/$sample/quast_metrics_ivar/report.tsv"`
+    ivar_quast_html=`echo "metrics/dna/$sample/quast_metrics_ivar/report.html"`
 
-    if [ -f "$quast_tsv" -a -f "$quast_html" ]; then
-        cons_len=`grep -oP "Total length \(>= 0 bp\)\t\K.*?(?=$)" $quast_tsv`
-        N_count=`grep -oP "# N's\",\"quality\":\"Less is better\",\"values\":\[\K.*?(?=])" $quast_html`
-        if [ "$cons_len" != "0" ]; then
-            cons_perc_N=`echo "scale=2; 100*$N_count/$cons_len" | bc -l`
+    if [ -f "$ivar_quast_tsv" -a -f "$ivar_quast_html" ]; then
+        ivar_cons_len=`grep -oP "Total length \(>= 0 bp\)\t\K.*?(?=$)" $ivar_quast_tsv`
+        ivar_N_count=`grep -oP "# N's\",\"quality\":\"Less is better\",\"values\":\[\K.*?(?=])" $ivar_quast_html`
+        if [ "$ivar_cons_len" != "0" ]; then
+            ivar_cons_perc_N=`echo "scale=2; 100*$ivar_N_count/$ivar_cons_len" | bc -l`
         else
-            cons_perc_N="NULL"
+            ivar_cons_perc_N="NULL"
         fi
-        cons_GC=`grep -oP "^GC \(%\)\t\K.*?(?=$)" $quast_tsv`
-        cons_genome_frac=`grep -oP "^Genome fraction \(%\)\t\K.*?(?=$)" $quast_tsv`
-        cons_N_perkbp=`grep -oP "^# N's per 100 kbp\t\K.*?(?=$)" $quast_tsv`
+        ivar_cons_GC=`grep -oP "^GC \(%\)\t\K.*?(?=$)" $ivar_quast_tsv`
+        ivar_cons_genome_frac=`grep -oP "^Genome fraction \(%\)\t\K.*?(?=$)" $ivar_quast_tsv`
+        ivar_cons_N_perkbp=`grep -oP "^# N's per 100 kbp\t\K.*?(?=$)" $ivar_quast_tsv`
     else
-        cons_len="NULL"
-        N_count="NULL"
-        cons_perc_N="NULL"
-        cons_GC="NULL"
-        cons_genome_frac="NULL"
-        cons_N_perkbp="NULL"
+        ivar_cons_len="NULL"
+        ivar_N_count="NULL"
+        ivar_cons_perc_N="NULL"
+        ivar_cons_GC="NULL"
+        ivar_cons_genome_frac="NULL"
+        ivar_cons_N_perkbp="NULL"
     fi
 
-    if [ -z $cons_GC ]; then
-        cons_GC="NULL"
+    if [ -z $ivar_cons_GC ]; then
+        ivar_cons_GC="NULL"
     fi
-    if [ -z $cons_genome_frac ]; then
-        cons_genome_frac="NULL"
+    if [ -z $ivar_cons_genome_frac ]; then
+        ivar_cons_genome_frac="NULL"
     fi
-    if [ -z $cons_N_perkbp ]; then
-        cons_N_perkbp="NULL"
+    if [ -z $ivar_cons_N_perkbp ]; then
+        ivar_cons_N_perkbp="NULL"
+    fi
+
+    # Parsing quast results from freebayes
+    freebayes_quast_tsv=`echo "metrics/dna/$sample/quast_metrics_freebayes/report.tsv"`
+    freebayes_quast_html=`echo "metrics/dna/$sample/quast_metrics_freebayes/report.html"`
+
+    if [ -f "$freebayes_quast_tsv" -a -f "$freebayes_quast_html" ]; then
+        freebayes_cons_len=`grep -oP "Total length \(>= 0 bp\)\t\K.*?(?=$)" $freebayes_quast_tsv`
+        freebayes_N_count=`grep -oP "# N's\",\"quality\":\"Less is better\",\"values\":\[\K.*?(?=])" $freebayes_quast_html`
+        if [ "$freebayes_cons_len" != "0" ]; then
+            freebayes_cons_perc_N=`echo "scale=2; 100*$freebayes_N_count/$freebayes_cons_len" | bc -l`
+        else
+            freebayes_cons_perc_N="NULL"
+        fi
+        freebayes_cons_GC=`grep -oP "^GC \(%\)\t\K.*?(?=$)" $freebayes_quast_tsv`
+        freebayes_cons_genome_frac=`grep -oP "^Genome fraction \(%\)\t\K.*?(?=$)" $freebayes_quast_tsv`
+        freebayes_cons_N_perkbp=`grep -oP "^# N's per 100 kbp\t\K.*?(?=$)" $freebayes_quast_tsv`
+    else
+        freebayes_cons_len="NULL"
+        freebayes_N_count="NULL"
+        freebayes_cons_perc_N="NULL"
+        freebayes_cons_GC="NULL"
+        freebayes_cons_genome_frac="NULL"
+        freebayes_cons_N_perkbp="NULL"
+    fi
+
+    if [ -z $freebayes_cons_GC ]; then
+        freebayes_cons_GC="NULL"
+    fi
+    if [ -z $freebayes_cons_genome_frac ]; then
+        freebayes_cons_genome_frac="NULL"
+    fi
+    if [ -z $freebayes_cons_N_perkbp ]; then
+        freebayes_cons_N_perkbp="NULL"
     fi
 
     # Parsing cutadapt results
-    readset_name=`grep "$sample" $readset | awk '{print $2}'`
+    readset_name=`grep "$sample" $READSET_FILE | awk '{print $2}'`
     cutadapt_file=`ls -t job_output/cutadapt/cutadapt.${readset_name}_*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9].[0-9][0-9].[0-9][0-9].o | head -n 1`
     fq_surviving_trim=`grep -oP 'Pairs written \(passing filters\):.*\(\K.*?(?=%)' $cutadapt_file`
 
@@ -133,16 +208,17 @@ do
     fi
 
     # Computing host contamination and host cleaning metrics
-    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> metrics/host_contamination_metrics.tsv
-    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> metrics/host_removed_metrics.tsv
+    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_CONTAMINATION_METRICS
+    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_REMOVED_METRICS
 
     kraken_file=`ls metrics/dna/${sample}/kraken_metrics/${sample}*.kraken2_report`
     if [ -s "$kraken_file" ]; then
-        grep "Homo sapiens" $kraken_file | awk -v sample=$sample '{print sample"\t"$2"\t"$1}' >> metrics/kraken2_metrics.tsv
+        grep "Homo sapiens" $kraken_file | awk -v sample=$sample '{print sample"\t"$2"\t"$1}' >> $KRAKEN_METRICS
     else
-        echo -e "$sample\tNULL\tNULL" >> metrics/kraken2_metrics.tsv
+        echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
     fi
 
-    echo "$sample,$cons_perc_N,$cons_len,$cons_GC,$cons_genome_frac,$cons_N_perkbp,$fq_surviving_trim,$bam_aln,$bam_surviving_filter,$bam_surviving_primertrim,$bam_meancov,$bam_mediancov,$bam_maxmincovmean,$bam_cov20X,$bam_cov50X,$bam_cov100X,$bam_cov250X,$bam_cov500X,$bam_cov1000X,$bam_cov2000X,$bam_meaninsertsize,$bam_medianinsertsize,$bam_sdinsertsize,$bam_mininsertsize,$bam_maxinsertsize" >> metrics/metrics.csv
+    echo "$sample,$ivar_cons_perc_N,$ivar_cons_len,$ivar_cons_GC,$ivar_cons_genome_frac,$ivar_cons_N_perkbp,$fq_surviving_trim,$bam_aln,$bam_surviving_filter,$bam_surviving_primertrim,$bam_meancov,$bam_mediancov,$bam_maxmincovmean,$bam_cov20X,$bam_cov50X,$bam_cov100X,$bam_cov250X,$bam_cov500X,$bam_cov1000X,$bam_cov2000X,$bam_meaninsertsize,$bam_medianinsertsize,$bam_sdinsertsize,$bam_mininsertsize,$bam_maxinsertsize" >> $METRICS_IVAR_OUT
+    echo "$sample,$freebayes_cons_perc_N,$freebayes_cons_len,$freebayes_cons_GC,$freebayes_cons_genome_frac,$freebayes_cons_N_perkbp,$fq_surviving_trim,$bam_aln,$bam_surviving_filter,$bam_surviving_primertrim,$bam_meancov,$bam_mediancov,$bam_maxmincovmean,$bam_cov20X,$bam_cov50X,$bam_cov100X,$bam_cov250X,$bam_cov500X,$bam_cov1000X,$bam_cov2000X,$bam_meaninsertsize,$bam_medianinsertsize,$bam_sdinsertsize,$bam_mininsertsize,$bam_maxinsertsize" >> $METRICS_FREEBAYES_OUT
     # break
 done
