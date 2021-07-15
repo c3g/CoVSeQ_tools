@@ -166,7 +166,7 @@ if(is.null(argsDF$output_name_pattern)) {
 readset.file.path <- file.path("..", "readset.txt")
 metrics.table.path <- file.path("..", "metrics", "metrics.csv")
 host.metrics.table.path <- file.path("..", "metrics", "host_contamination_metrics.tsv")
-metadata.path <- file.path("run_metadata.csv")
+# metadata.path <- file.path("run_metadata.csv")
 # module.path <- file.path("module_table.tmp.csv")
 # output.files.path <- file.path("..", "output_file_paths.csv")
 
@@ -221,7 +221,7 @@ variant.numbers <- tibble(
 
 for (sample in report_readset.table$Sample) {
   vcf.table <- read_tsv_plus(sample)
-  write_csv(vcf.table, path = file.path("report/sample_reports", paste0(sample, "_tsv_info.csv")))
+  # write_csv(vcf.table, path = file.path("report/sample_reports", paste0(sample, "_tsv_info.csv")))
   var.num.10 <- vcf.table %>% filter(alt.FREQ > 0.10) %>% tally() %>% pull(n)
   var.num.75 <- vcf.table %>% filter(alt.FREQ > 0.75) %>% tally() %>% pull(n)
 #  frameshift <- vcf.table %>% filter(frameshift == TRUE) %>% tally() %>% pull(n)
