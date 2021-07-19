@@ -212,25 +212,18 @@ variant.numbers <- tibble(
   Sample = character(), 
   var.num.10.more = numeric(), 
   var.num.75.more = numeric(),
-#  frameshift = numeric()
 )
 
-# with.vcf <- file.table %>% filter(!is.na(tsv.path)) %>% pull(sample)
-
-# readset.table.vcf <- report_readset.table %>% filter(Sample %in% with.vcf)
 
 for (sample in report_readset.table$Sample) {
   vcf.table <- read_tsv_plus(sample)
-  # write_csv(vcf.table, path = file.path("report/sample_reports", paste0(sample, "_tsv_info.csv")))
   var.num.10 <- vcf.table %>% filter(alt.FREQ > 0.10) %>% tally() %>% pull(n)
   var.num.75 <- vcf.table %>% filter(alt.FREQ > 0.75) %>% tally() %>% pull(n)
-#  frameshift <- vcf.table %>% filter(frameshift == TRUE) %>% tally() %>% pull(n)
   variant.numbers <- add_row(variant.numbers, Sample = sample, var.num.10.more = var.num.10, var.num.75.more = var.num.75) 
 }
 
 host.metrics.table <- host.metrics.table %>%
-    mutate(total.reads = Total_aligned + Unmapped_only)# %>%
-    # mutate(Human_only_perc = round(Human_only_perc, 2))
+    mutate(total.reads = Total_aligned + Unmapped_only)
 
 
 ## Join all tables 
@@ -260,7 +253,6 @@ final.columns <- c("Sample",
                    "consensus.length",
                    "var.num.10.more",
                    "var.num.75.more",
-                   # "frameshift",
                    "status")
 
 final.table <- full.table %>% dplyr::select(final.columns) %>% rename_at(vars(final.columns), ~final.column.names)

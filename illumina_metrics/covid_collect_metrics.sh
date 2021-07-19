@@ -32,16 +32,11 @@ while getopts "hr:o:" opt; do
   esac
 done
 
-# readset=$1
 
 if [[ -z "$READSET_FILE" ]]; then
    usage
       exit 1
 fi
-
-# module load mugqic/python/3.7.3
-# module load mugqic/sambamba/0.7.0
-# module load mugqic/samtools/1.10
 
 METRICS_IVAR_OUT=${GENPIPES_OUTPUT_PATH}/metrics/metrics.csv
 METRICS_FREEBAYES_OUT=${GENPIPES_OUTPUT_PATH}/metrics/metrics_freebayes.csv
