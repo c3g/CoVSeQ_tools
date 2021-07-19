@@ -10,46 +10,6 @@ set.seed(123456789)
 # Define Parsers
 CoV2.genome <- Seqinfo(seqnames = c("MN908947.3"), seqlengths = c(29903), isCircular=c(FALSE), genome="SARSCoV2")
 
-read_vcf_plus <- function(sample.name){
-  # print(sample.name)
-  sample.vcf.path <- file.path("..","variant", sample.name, paste0(sample.name,".sorted.filtered.primerTrim.annotate.vcf"))
-  sample.vcf <- readVcf(sample.vcf.path, CoV2.genome)
-  
-  if (dim(sample.vcf)[1] == 0 ){
-    
-    variant.ids <- c(NaN)
-    position <- c(NaN)
-    ref.allele <- c(NaN)
-    alt.allele <- c(NaN)
-    variation <- c(NaN) 
-    alt.FREQ <- c(NaN)
-    frameshift <- c(NaN)
-    
-      } 
-  
-  else if (dim(sample.vcf)[1] >= 1){ 
-    
-    variant.ids <- geno(sample.vcf)$alt_FREQ %>% rownames()
-    alt.FREQ  <- geno(sample.vcf)$alt_FREQ %>% as_tibble() %>% pull(1) %>% as.double()
-    position <- start(sample.vcf) %>% as.double()
-    ref.allele <- ref(sample.vcf) %>% as.character()
-    alt.allele <- alt(sample.vcf) %>% unlist() %>% as.character() 
-    variation <- paste0(ref.allele, position, alt.allele)
-    # Colvoluted way to detect if there are frameshift variants using SnpEff annotation
-    frameshift.table <- info(sample.vcf)$ANN %>% # Extract annotation from VCF object
-      as_tibble() %>% # Since annotation is a list, first convert it to tibble
-      group_by(group) %>% # Singe variants have multiple annotations, first group them using the group variable of the tibble
-      summarise(detect.frameshift = str_detect(value, "frameshift")) # Next, check each annotation for the word "frameshift"
-    frameshift <- frameshift.table %>% group_by(group) %>% 
-      summarise(bool.frameshift = max(detect.frameshift)) %>% # Taking advantage of the groups and the fact that TRUE = 1, extract the max of each group, in essence telling you if there is at least one TRUE value in the previous step
-      pull(bool.frameshift) %>% # Keep only the last vector (consists of 0s and 1s)
-      as.logical() # Turn this vector into logical vector
-    
-    }
-  
-  tibble(variant.ids, position, ref.allele, alt.allele, variation, alt.FREQ, frameshift)
-}
-
 
 sample_status <- function(percent.N){
   if (is.na(percent.N)) {
@@ -72,7 +32,6 @@ sample_status <- function(percent.N){
 
 read_tsv_plus <- function(sample.name){
 
-    # print(sample.name)
     sample.var.tsv.path <- Sys.glob(file.path("variant", sample.name, paste0(sample.name, "*.tsv")))
     sample.var.tsv <- readr::read_tsv(sample.var.tsv.path)
 
@@ -132,14 +91,10 @@ if("--help" %in% args) {
  
 ## Parse arguments (we expect the form --arg=value)
 parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
-# argsDF <- as.data.frame(do.call("rbind", parseArgs(args)))
-# argsL <- as.list(as.character(argsDF$V2))
-# names(argsL) <- argsDF$V1
 
 argsDF <- as.data.frame(t(do.call("rbind", parseArgs(args))), stringsAsFactors=FALSE)
 colnames(argsDF) <- argsDF[1, ]
 argsDF <- as.data.frame(argsDF[-1,])
-# print(argsDF)
 
 if(is.null(argsDF$report_readset)) {
   print("The argument --report_readset= is mandatory")
@@ -166,9 +121,6 @@ if(is.null(argsDF$output_name_pattern)) {
 readset.file.path <- file.path("..", "readset.txt")
 metrics.table.path <- file.path("..", "metrics", "metrics.csv")
 host.metrics.table.path <- file.path("..", "metrics", "host_contamination_metrics.tsv")
-metadata.path <- file.path("run_metadata.csv")
-# module.path <- file.path("module_table.tmp.csv")
-# output.files.path <- file.path("..", "output_file_paths.csv")
 
 
 ###############################################################################
@@ -177,16 +129,6 @@ report_readset.table <- readr::read_tsv(argsDF$report_readset)
 metrics.table <- readr::read_csv(argsDF$metrics) 
 host_contamination_metrics.table <- readr::read_tsv(argsDF$host_contamination_metrics)
 host.metrics.table <- readr::read_tsv(argsDF$host_contamination_metrics)
-# metadata.table <- readr::read_csv(args$run_metadata, col_names = c("category", "value"))
-# module.table <- readr::read_csv(args$module_table, col_names = c("category", "value"))
-# file.table <- readr::read_csv(output.files.path, na = c("", " ", "NULL"))
-
-###############################################################################
-# Produce software versions table 
-# module.table %>% 
-#   dplyr::rename("Software Versions" = value) %>% 
-#   dplyr::select("Software Versions") %>% 
-#   write_csv(path="software_versions.csv")
 
 ###############################################################################
 # Produce metrics table
@@ -212,25 +154,18 @@ variant.numbers <- tibble(
   Sample = character(), 
   var.num.10.more = numeric(), 
   var.num.75.more = numeric(),
-#  frameshift = numeric()
 )
 
-# with.vcf <- file.table %>% filter(!is.na(tsv.path)) %>% pull(sample)
-
-# readset.table.vcf <- report_readset.table %>% filter(Sample %in% with.vcf)
 
 for (sample in report_readset.table$Sample) {
   vcf.table <- read_tsv_plus(sample)
-  write_csv(vcf.table, path = file.path("report/sample_reports", paste0(sample, "_tsv_info.csv")))
   var.num.10 <- vcf.table %>% filter(alt.FREQ > 0.10) %>% tally() %>% pull(n)
   var.num.75 <- vcf.table %>% filter(alt.FREQ > 0.75) %>% tally() %>% pull(n)
-#  frameshift <- vcf.table %>% filter(frameshift == TRUE) %>% tally() %>% pull(n)
   variant.numbers <- add_row(variant.numbers, Sample = sample, var.num.10.more = var.num.10, var.num.75.more = var.num.75) 
 }
 
 host.metrics.table <- host.metrics.table %>%
-    mutate(total.reads = Total_aligned + Unmapped_only)# %>%
-    # mutate(Human_only_perc = round(Human_only_perc, 2))
+    mutate(total.reads = Total_aligned + Unmapped_only)
 
 
 ## Join all tables 
@@ -260,7 +195,6 @@ final.columns <- c("Sample",
                    "consensus.length",
                    "var.num.10.more",
                    "var.num.75.more",
-                   # "frameshift",
                    "status")
 
 final.table <- full.table %>% dplyr::select(final.columns) %>% rename_at(vars(final.columns), ~final.column.names)
