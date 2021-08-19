@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Script that generates, colletcts and formats all relevant COVID metrics.
+Script that generates, collects and formats all relevant COVID metrics.
 
 Arguments:
 sample_name (str): the name of the sample used as input
@@ -38,7 +38,7 @@ from Bio.SeqUtils import GC
 
 def parseoptions():
     """Command line options"""
-    parser = argparse.ArgumentParser(description="Calculate the Jaccard coefficient within a sliding window from a bam alignment file")
+    parser = argparse.ArgumentParser(description="Script that generates, collects and formats all relevant COVID metrics.")
 
     parser.add_argument('-c',
                         '--consensus',
