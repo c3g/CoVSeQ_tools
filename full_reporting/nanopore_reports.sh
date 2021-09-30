@@ -11,7 +11,7 @@ set -eu -o pipefail
 if [ "$#" != 2 ]
 then
   echo "Error: you provided an incorrect number of arguments." 
-  echo "Usage: $0 <input_dir> <output_dir>"
+  echo "Usage: $(basename $0) <input_dir> <output_dir>"
   exit 1
 fi
 
@@ -59,7 +59,7 @@ NCOV_TOOLS_SUMMARY="${OUTPUT_REPORT_PATH}/ncov_tools_summary.tsv"
 echo -e ${NCOV_TOOLS_SUMMARY_HEADER} > ${NCOV_TOOLS_SUMMARY}
 grep -v "^sample" $(find ${INPUT_NANOPORE_PATH}/*/analysis/*/ncov_tools/ -name "*_summary_qc.tsv" -type f) |\
     sed s:${INPUT_NANOPORE_PATH}/:: |\
-    sed s:/analysis/:'   ':g |\
+    sed s:/analysis/:'	':g |\
     sed s:/ncov_tools/qc_reports/.*_summary_qc.tsv::g |\
     sed s/\:/'	'/ >> ${NCOV_TOOLS_SUMMARY} 
 
@@ -73,7 +73,7 @@ NEG_CTRL_REPORT="${OUTPUT_REPORT_PATH}/neg_control_report.tsv"
 echo -e ${NCOV_TOOLS_NEG_CTRL_HEADER} > ${NEG_CTRL_REPORT}
 grep -v "^file" $(find ${INPUT_NANOPORE_PATH}/*/analysis/*/ncov_tools/ -name "*_negative_control_report.tsv" -type f) |\
     sed s:${INPUT_NANOPORE_PATH}/:: |\
-    sed s:/analysis/:'   ':g |\
+    sed s:/analysis/:'	':g |\
     sed s:/ncov_tools/qc_reports/.*_negative_control_report.tsv::g |\
     sed s/\:/'	'/ >> ${NEG_CTRL_REPORT} 
     
@@ -92,7 +92,7 @@ AMPLICON_COV_REPORT="${OUTPUT_REPORT_PATH}/amplicon_coverage_report.tsv"
 echo -e ${NCOV_TOOLS_AMPLICON_COV_HEADER} > ${AMPLICON_COV_REPORT}
 grep -v "^sample" $(find ${INPUT_NANOPORE_PATH}/*/analysis/*/ncov_tools/ -name "*_amplicon_coverage_table.tsv" -type f) |\
     sed s:${INPUT_NANOPORE_PATH}/:: |\
-    sed s:/analysis/:'   ':g |\
+    sed s:/analysis/:'	':g |\
     sed s:/ncov_tools/qc_analysis/.*_amplicon_coverage_table.tsv::g |\
     sed s/\:/'	'/ >> ${AMPLICON_COV_REPORT} 
     
