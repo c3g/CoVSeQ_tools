@@ -58,9 +58,9 @@ fi
 
 ####################
 # Create links for files to ensure background compatibility 
-if [ $(find ${INPUT_NANOPORE_PATH} -name "readset.txt" -type f) ] ; then  
+if [ $(find ${INPUT_NANOPORE_PATH} -name "readset.txt" ) ] ; then  
     # Save Readset file location
-    READSET=$(find ${INPUT_NANOPORE_PATH} -name "readset.txt" -type f)
+    READSET=$(find ${INPUT_NANOPORE_PATH} -name "readset.txt" )
     # Sync readset file
     cp ${READSET} ${ANALYSIS_OUTPUT}/
     # Loop through samples in readset
