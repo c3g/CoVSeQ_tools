@@ -132,9 +132,13 @@ do
     fi
 
     # Parsing cutadapt results
-    readset_name=`grep "$sample" $READSET_FILE | awk '{print $2}'`
-    cutadapt_file=`ls -t job_output/cutadapt/cutadapt.${readset_name}_*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9].[0-9][0-9].[0-9][0-9].o | head -n 1`
-    fq_surviving_trim=`grep -oP 'Pairs written \(passing filters\):.*\(\K.*?(?=%)' $cutadapt_file`
+    fq_surviving_trim=0
+    for readset_name in `grep "$sample" $READSET_FILE | awk '{print $2}'`
+    do
+        # readset_name=`grep "$sample" $READSET_FILE | awk '{print $2}'`
+        cutadapt_file=`ls -t job_output/cutadapt/cutadapt.${readset_name}_*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9].[0-9][0-9].[0-9][0-9].o | head -n 1`
+        fq_surviving_trim+=`grep -oP 'Pairs written \(passing filters\):.*\(\K.*?(?=%)' $cutadapt_file`
+    done
 
     # Parsing sambamba flagstat and picard metrics
     raw_flagstat_file=`echo "metrics/dna/$sample/flagstat/$sample.sorted.flagstat"`
