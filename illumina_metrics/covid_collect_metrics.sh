@@ -8,13 +8,18 @@ echo
 echo "usage: $0 <READSET_FILE>
   Gathers metrics for covseq pipeline from GenPipes. This script assumes you have samtools version 1.10 or above loaded in your environment"
 echo
+echo "   -t <THREADS>                  Number of threads to use (Default: 1)."
 echo "   -r <READSET_FILE>             readset file used for GenPipes covseq analysis."
 echo "   -o <GENPIPES_OUTPUT_PATH>     path of GenPipes covseq output location. (Default: $GENPIPES_OUTPUT_PATH)"
 
 }
 
-while getopts "hr:o:" opt; do
+THREADS=1
+while getopts "ht:r:o:" opt; do
   case $opt in
+    t)
+      THREADS=${OPTARG}
+    ;;
     r)
       READSET_FILE=${OPTARG}
     ;;
@@ -207,8 +212,8 @@ do
     fi
 
     # Computing host contamination and host cleaning metrics
-    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_CONTAMINATION_METRICS
-    samtools idxstats -@ 10 host_removal/${sample}/${sample}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_REMOVED_METRICS
+    samtools idxstats -@ $THREADS host_removal/${sample}/${sample}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_CONTAMINATION_METRICS
+    samtools idxstats -@ $THREADS host_removal/${sample}/${sample}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_REMOVED_METRICS
 
     kraken_file=`ls metrics/dna/${sample}/kraken_metrics/${sample}*.kraken2_report`
     if [ -s "$kraken_file" ]; then
