@@ -173,12 +173,18 @@ do
         kraken_file=`ls metrics/dna/${sample}/kraken_metrics/${readset_name}*.kraken2_report`
         if [ -s "$kraken_file" ]; then
             homo_sapiens_kraken=`grep "Homo sapiens" $kraken_file`
-            homo_sapiens_clade=$((homo_sapiens_clade+$(echo $homo_sapiens_kraken | cut -d$',' -f2)))
-            homo_sapiens_clade_perc=$((homo_sapiens_clade_perc+$(echo $homo_sapiens_kraken | cut -d$',' -f1)))
+            if [ -z "$homo_sapiens_kraken" ]; then
+                homo_sapiens_clade=0
+                homo_sapiens_clade_perc=0
+            else
+                homo_sapiens_clade=$((homo_sapiens_clade+$(echo $homo_sapiens_kraken | cut -d$',' -f2)))
+                homo_sapiens_clade_perc=$((homo_sapiens_clade_perc+$(echo $homo_sapiens_kraken | cut -d$',' -f1)))
+            fi
             # grep "Homo sapiens" $kraken_file | awk -v sample=$sample '{print sample"\t"$2"\t"$1}' >> $KRAKEN_METRICS
 
         else
-            echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
+            kraken="NULL"
+            # echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
         fi
     done
 
@@ -194,7 +200,11 @@ do
         printf $sample"\t"$tot_aligned_hrem"\t"$hum_only_hrem"\t%.2f\t"$sars_only_hrem"\t%.2f\t"$unmapped_only_hrem"\t%.2f\n", $(echo "100*$hum_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$sars_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$unmapped_only_hrem/$tot_aligned_hrem" | bc -l) >> $HOST_REMOVED_METRICS
     fi
 
-    printf $sample"\t"$homo_sapiens_clade"\t%.2f", $(echo "$homo_sapiens_clade_perc/$readset_count" | bc -l) >> $KRAKEN_METRICS
+    if (($kraken == "NULL")); then
+        echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
+    else
+        printf $sample"\t"$homo_sapiens_clade"\t%.2f", $(echo "$homo_sapiens_clade_perc/$readset_count" | bc -l) >> $KRAKEN_METRICS
+    fi
 
     # Parsing sambamba flagstat and picard metrics
     raw_flagstat_file=`echo "metrics/dna/$sample/flagstat/$sample.sorted.flagstat"`
