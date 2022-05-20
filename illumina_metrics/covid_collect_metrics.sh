@@ -136,14 +136,65 @@ do
         freebayes_cons_N_perkbp="NULL"
     fi
 
-    # Parsing cutadapt results
     fq_surviving_trim=0
+    tot_aligned_hybrid=0
+    hum_only_hybrid=0
+    sars_only_hybrid=0
+    unmapped_only_hybrid=0
+    tot_aligned_hrem=0
+    hum_only_hrem=0
+    sars_only_hrem=0
+    unmapped_only_hrem=0
+    homo_sapiens_clade=0
+    homo_sapiens_clade_perc=0
+    readset_count=0
     for readset_name in `grep "$sample" $READSET_FILE | awk '{print $2}'`
     do
-        # readset_name=`grep "$sample" $READSET_FILE | awk '{print $2}'`
+        readset_count=$((readset_count+1))
+        # Parsing cutadapt results
         cutadapt_file=`ls -t job_output/cutadapt/cutadapt.${readset_name}_*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9].[0-9][0-9].[0-9][0-9].o | head -n 1`
         fq_surviving_trim+=`grep -oP 'Pairs written \(passing filters\):.*\(\K.*?(?=%)' $cutadapt_file`
+
+        # Computing host contamination and host cleaning metrics
+        # samtools idxstats -@ $THREADS host_removal/${sample}/${readset_name}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_CONTAMINATION_METRICS
+        hybrid=`samtools idxstats -@ $THREADS host_removal/${sample}/${readset_name}*.hybrid.sorted.bam | awk '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; printf tot","hum","cov","unmapped}'`
+        tot_aligned_hybrid=$((tot_aligned_hybrid+$(echo $hybrid | cut -d$',' -f1)))
+        hum_only_hybrid=$((hum_only_hybrid+$(echo $hybrid | cut -d$',' -f2)))
+        sars_only_hybrid=$((sars_only_hybrid+$(echo $hybrid | cut -d$',' -f3)))
+        unmapped_only_hybrid=$((unmapped_only_hybrid+$(echo $hybrid | cut -d$',' -f4)))
+
+        hrem=`samtools idxstats -@ $THREADS host_removal/${sample}/${readset_name}*.host_removed.sorted.bam | awk '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; printf tot","hum","cov","unmapped}'`
+        tot_aligned_hrem=$((tot_aligned_hrem+$(echo $hybrid | cut -d$',' -f1)))
+        hum_only_hrem=$((hum_only_hrem+$(echo $hybrid | cut -d$',' -f2)))
+        sars_only_hrem=$((sars_only_hrem+$(echo $hybrid | cut -d$',' -f3)))
+        unmapped_only_hrem=$((unmapped_only_hrem+$(echo $hybrid | cut -d$',' -f4)))
+        # samtools idxstats -@ $THREADS host_removal/${sample}/${readset_name}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_REMOVED_METRICS
+
+        kraken_file=`ls metrics/dna/${sample}/kraken_metrics/${readset_name}*.kraken2_report`
+        if [ -s "$kraken_file" ]; then
+            homo_sapiens_kraken=`grep "Homo sapiens" $kraken_file`
+            homo_sapiens_clade=$((homo_sapiens_clade+$(echo $homo_sapiens_kraken | cut -d$',' -f2)))
+            homo_sapiens_clade_perc=$((homo_sapiens_clade_perc+$(echo $homo_sapiens_kraken | cut -d$',' -f1)))
+            # grep "Homo sapiens" $kraken_file | awk -v sample=$sample '{print sample"\t"$2"\t"$1}' >> $KRAKEN_METRICS
+
+        else
+            echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
+        fi
     done
+
+    if ((tot_aligned_hybrid <= 0)); then
+        printf $sample"\t"$tot_aligned_hybrid"\t"$hum_only_hybrid"\tNULL\t"$sars_only_hybrid"\tNULL\t"$unmapped_only_hybrid"\tNULL\n" >> $HOST_CONTAMINATION_METRICS
+    else
+        printf $sample"\t"$tot_aligned_hybrid"\t"$hum_only_hybrid"\t%.2f\t"$sars_only_hybrid"\t%.2f\t"$unmapped_only_hybrid"\t%.2f\n", $(echo "100*$hum_only_hybrid/$tot_aligned_hybrid" | bc -l), $(echo "100*$sars_only_hybrid/$tot_aligned_hybrid" | bc -l), $(echo "100*$unmapped_only_hybrid/$tot_aligned_hybrid" | bc -l) >> $HOST_CONTAMINATION_METRICS
+    fi
+
+    if ((tot_aligned_hrem <= 0)); then
+        printf $sample"\t"$tot_aligned_hrem"\t"$hum_only_hrem"\tNULL\t"$sars_only_hrem"\tNULL\t"$unmapped_only_hrem"\tNULL\n" >> $HOST_REMOVED_METRICS
+    else
+        printf $sample"\t"$tot_aligned_hrem"\t"$hum_only_hrem"\t%.2f\t"$sars_only_hrem"\t%.2f\t"$unmapped_only_hrem"\t%.2f\n", $(echo "100*$hum_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$sars_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$unmapped_only_hrem/$tot_aligned_hrem" | bc -l) >> $HOST_REMOVED_METRICS
+    fi
+
+    printf $sample"\t"$homo_sapiens_clade"\t%.2f", $(echo "$homo_sapiens_clade_perc/$readset_count" | bc -l) >> $KRAKEN_METRICS
 
     # Parsing sambamba flagstat and picard metrics
     raw_flagstat_file=`echo "metrics/dna/$sample/flagstat/$sample.sorted.flagstat"`
@@ -209,17 +260,6 @@ do
         bam_mininsertsize="NULL"
         bam_maxinsertsize="NULL"
         bam_sdinsertsize="NULL"
-    fi
-
-    # Computing host contamination and host cleaning metrics
-    samtools idxstats -@ $THREADS host_removal/${sample}/${sample}*.hybrid.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_CONTAMINATION_METRICS
-    samtools idxstats -@ $THREADS host_removal/${sample}/${sample}*.host_removed.sorted.bam | awk -v sample=$sample '{array[$1]=$3; pwet[$1]=$4; next} END {tot=0; unmapped=0; for (chr in array) {tot+=array[chr]; unmapped+=pwet[chr]}; tot+=unmapped; cov=array["MN908947.3"]; hum=tot-cov-unmapped; if (tot <= 0) {printf sample"\t"tot"\t"hum"\tNULL\t"cov"\tNULL\t"unmapped"\tNULL\n"} else {printf sample"\t"tot"\t"hum"\t%.2f\t"cov"\t%.2f\t"unmapped"\t%.2f\n", 100*hum/tot, 100*cov/tot, 100*unmapped/tot}}' >> $HOST_REMOVED_METRICS
-
-    kraken_file=`ls metrics/dna/${sample}/kraken_metrics/${sample}*.kraken2_report`
-    if [ -s "$kraken_file" ]; then
-        grep "Homo sapiens" $kraken_file | awk -v sample=$sample '{print sample"\t"$2"\t"$1}' >> $KRAKEN_METRICS
-    else
-        echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
     fi
 
     echo "$sample,$ivar_cons_perc_N,$ivar_cons_len,$ivar_cons_GC,$ivar_cons_genome_frac,$ivar_cons_N_perkbp,$fq_surviving_trim,$bam_aln,$bam_surviving_filter,$bam_surviving_primertrim,$bam_meancov,$bam_mediancov,$bam_maxmincovmean,$bam_cov20X,$bam_cov50X,$bam_cov100X,$bam_cov250X,$bam_cov500X,$bam_cov1000X,$bam_cov2000X,$bam_meaninsertsize,$bam_medianinsertsize,$bam_sdinsertsize,$bam_mininsertsize,$bam_maxinsertsize" >> $METRICS_IVAR_OUT
