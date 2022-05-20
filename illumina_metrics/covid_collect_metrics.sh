@@ -189,21 +189,21 @@ do
     done
 
     if ((tot_aligned_hybrid <= 0)); then
-        printf $sample"\t"$tot_aligned_hybrid"\t"$hum_only_hybrid"\tNULL\t"$sars_only_hybrid"\tNULL\t"$unmapped_only_hybrid"\tNULL\n" >> $HOST_CONTAMINATION_METRICS
+        printf "$sample\t$tot_aligned_hybrid\t$hum_only_hybrid\tNULL\t$sars_only_hybrid\tNULL\t$unmapped_only_hybrid\tNULL\n" >> $HOST_CONTAMINATION_METRICS
     else
-        printf $sample"\t"$tot_aligned_hybrid"\t"$hum_only_hybrid"\t%.2f\t"$sars_only_hybrid"\t%.2f\t"$unmapped_only_hybrid"\t%.2f\n", $(echo "100*$hum_only_hybrid/$tot_aligned_hybrid" | bc -l), $(echo "100*$sars_only_hybrid/$tot_aligned_hybrid" | bc -l), $(echo "100*$unmapped_only_hybrid/$tot_aligned_hybrid" | bc -l) >> $HOST_CONTAMINATION_METRICS
+        printf "$sample\t$tot_aligned_hybrid\t$hum_only_hybrid\t%.2f\t$sars_only_hybrid\t%.2f\t$unmapped_only_hybrid\t%.2f\n" "$(echo "100*$hum_only_hybrid/$tot_aligned_hybrid" | bc -l)" "$(echo "100*$sars_only_hybrid/$tot_aligned_hybrid" | bc -l)" "$(echo "100*$unmapped_only_hybrid/$tot_aligned_hybrid" | bc -l)" >> $HOST_CONTAMINATION_METRICS
     fi
 
     if ((tot_aligned_hrem <= 0)); then
-        printf $sample"\t"$tot_aligned_hrem"\t"$hum_only_hrem"\tNULL\t"$sars_only_hrem"\tNULL\t"$unmapped_only_hrem"\tNULL\n" >> $HOST_REMOVED_METRICS
+        printf "$sample\t$tot_aligned_hrem\t$hum_only_hrem\tNULL\t$sars_only_hrem\tNULL\t$unmapped_only_hrem\tNULL\n" >> $HOST_REMOVED_METRICS
     else
-        printf $sample"\t"$tot_aligned_hrem"\t"$hum_only_hrem"\t%.2f\t"$sars_only_hrem"\t%.2f\t"$unmapped_only_hrem"\t%.2f\n", $(echo "100*$hum_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$sars_only_hrem/$tot_aligned_hrem" | bc -l), $(echo "100*$unmapped_only_hrem/$tot_aligned_hrem" | bc -l) >> $HOST_REMOVED_METRICS
+        printf "$sample\t$tot_aligned_hrem\t$hum_only_hrem\t%.2f\t$sars_only_hrem\t%.2f\t$unmapped_only_hrem\t%.2f\n" "$(echo "100*$hum_only_hrem/$tot_aligned_hrem" | bc -l)" "$(echo "100*$sars_only_hrem/$tot_aligned_hrem" | bc -l)" "$(echo "100*$unmapped_only_hrem/$tot_aligned_hrem" | bc -l)" >> $HOST_REMOVED_METRICS
     fi
 
     if (($kraken == "NULL")); then
-        echo -e "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
+        printf "$sample\tNULL\tNULL" >> $KRAKEN_METRICS
     else
-        printf $sample"\t"$homo_sapiens_clade"\t%.2f", $(echo "$homo_sapiens_clade_perc/$readset_count" | bc -l) >> $KRAKEN_METRICS
+        printf "$sample\t$homo_sapiens_clade\t%.2f" "$(echo "$homo_sapiens_clade_perc/$readset_count" | bc -l)" >> $KRAKEN_METRICS
     fi
 
     # Parsing sambamba flagstat and picard metrics
