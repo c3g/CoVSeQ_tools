@@ -175,7 +175,7 @@ do
             homo_sapiens_kraken=`grep "Homo sapiens" $kraken_file`
             if ! [ -z "$homo_sapiens_kraken" ]; then
                 homo_sapiens_clade=$((homo_sapiens_clade+$(echo $homo_sapiens_kraken | cut -d$' ' -f2)))
-                homo_sapiens_clade_perc=`$(echo "$homo_sapiens_clade_perc+$(echo $homo_sapiens_kraken | cut -d$' ' -f1)" | bc -l)`
+                homo_sapiens_clade_perc=`echo "$homo_sapiens_clade_perc+$(echo $homo_sapiens_kraken | cut -d$' ' -f1)" | bc -l`
                 # homo_sapiens_clade=0
                 # homo_sapiens_clade_perc=0
             # else
