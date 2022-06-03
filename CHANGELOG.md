@@ -1,6 +1,25 @@
-5 tags, 23 commits
+6 tags, 34 commits
 
-HEAD        Thu Oct 14 20:52:35 2021 +0000        0 commits
+HEAD        Fri Jun 3 18:28:00 2022 +0000        0 commits
+
+1.2.1        Fri Jun 3 18:35:34 2022 +0000        11 commits
+
+  Edouard Henrion <edouard.henrion@mcgill.ca>      1 commits
+
+       1346267 Version bump to 1.2.0
+
+  Paul Stretenowich <paul.stretenowich@mcgill.ca>      10 commits
+
+       ac0539f Merged in dev (pull request #4)
+       60d6bbd Debug
+       0cdc68e Debug kraken field separator parsing
+       5e15961 Debug kraken percentage calculation
+       26d95f4 Debug cut pattern for kraken
+       0ce6685 Fixing printf
+       223338e Fixing latest commit
+       4b8e181 Adding for loop on readsets for sample having multiple readsets
+       e8d8a28 Adding threads parameter
+       a2bbbf9 Adding for loop on readsets for cutadapt output
 
 1.2.0        Fri Oct 15 14:24:42 2021 -0400        4 commits
 
