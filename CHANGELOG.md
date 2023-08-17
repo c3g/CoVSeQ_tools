@@ -1,6 +1,19 @@
-6 tags, 34 commits
+7 tags, 39 commits
 
-HEAD        Fri Jun 3 18:28:00 2022 +0000        0 commits
+HEAD        Thu Aug 17 19:13:04 2023 +0000        0 commits
+
+1.2.2        Thu Aug 17 15:18:01 2023 -0400        5 commits
+
+  Édouard Henrion <henrione@beluga2.int.ets1.calculquebec.ca>      3 commits
+
+       5f67d66 Adding Release instructions
+       7a29a72 Version bump to 1.2.2-beta
+       0e91482 Version bump to 1.2.1
+
+  Mareike Janiak <mareike.janiak@computationalgenomics.ca>      2 commits
+
+       a93352c Merged in prepare_report_fix (pull request #5)
+       a173193 collect_metrics : make grep more specific with -w flag to avoid matches with closely named samples
 
 1.2.1        Fri Jun 3 18:35:34 2022 +0000        11 commits
 
