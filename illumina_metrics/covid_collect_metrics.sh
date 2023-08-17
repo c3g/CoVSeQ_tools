@@ -148,7 +148,7 @@ do
     homo_sapiens_clade=0
     homo_sapiens_clade_perc=0
     readset_count=0
-    for readset_name in `grep "$sample" $READSET_FILE | awk '{print $2}'`
+    for readset_name in `grep -w "$sample" $READSET_FILE | awk '{print $2}'`
     do
         readset_count=$((readset_count+1))
         # Parsing cutadapt results
